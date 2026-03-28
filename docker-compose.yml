@@ -1,0 +1,70 @@
+services:
+    web:
+        build: ./frontend
+
+        ports:
+            - 5000:5000
+
+        depends_on:
+            - auth
+            - surveys
+
+    auth:
+        build: ./backend/authentication
+        ports:
+            - 5007:5000
+        environment:
+            - DATABASE_URL=postgresql://postgres:postgres@dba:5432/users
+        depends_on:
+            dba:
+                condition: service_healthy
+
+    surveys:
+        build: ./backend/database
+
+        ports:
+            - 5001:5000
+        environment:
+            - DATABASE_URL=postgresql://postgres:postgres@dbb:5432/surveys
+        depends_on:
+            dbb:
+                condition: service_healthy
+
+    # The two databases for both logic containers
+    dba:
+        image: postgres:17
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: users
+
+        volumes:
+            - pgdata2:/var/lib/postgresql/data
+
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+    dbb:
+        image: postgres:17
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: surveys
+
+        volumes:
+            - pgdata1:/var/lib/postgresql/data
+
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+volumes:
+    pgdata1:
+        driver: local
+    pgdata2:
+        driver: local
