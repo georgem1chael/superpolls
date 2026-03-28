@@ -1,0 +1,37 @@
+services:
+    frontend:
+        build: ./frontend
+        ports:
+            - 5000:5000
+
+        environment:
+            - BACKEND_URL=http://localhost:5080
+
+    backend:
+        build: ./backend
+        ports:
+            - 5080:5000
+        environment:
+            - DATABASE_URL=postgresql://postgres:changeme@db:5432/postgres
+        depends_on:
+            db:
+                condition: service_healthy
+
+    db:
+        image: postgres:17
+        environment:
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=changeme
+            - POSTGRES_DB=postgres
+        volumes:
+            - pgdata:/var/lib/postgresql/data
+
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+volumes:
+    pgdata:
+        driver: local
